@@ -2,9 +2,8 @@ import sys
 import glob
 import os
 import shutil
-from deid.dicom import get_files, get_identifiers, replace_identifiers
-from deid.config import DeidRecipe
 from PyQt6.QtWidgets import QWidget, QPushButton, QProgressBar, QVBoxLayout, QApplication, QFileDialog, QGroupBox, QLineEdit, QLabel, QGridLayout
+from pydicom import dcmread
 
 patientName = 'Fred Nerk'
 
@@ -51,20 +50,6 @@ class DicomAnonWidget(QWidget):
         self.setLayout(self.vbox)
         self.show()
 
-    def generate_uid(item, value, field, dicom):
-        '''This function will generate a uuid! You can expect it to be passed
-        the dictionary of items extracted from the dicom (and your function)
-        and variables, the original value (func:generate_uid) and the field
-        name you are applying it to.
-        '''
-        import uuid
-        # a field can either be just the name string, or a DicomElement
-        if hasattr(field, 'name'):
-            field = field.name
-        prefix = field.lower().replace(' ', '')
-        # return prefix + "-" + str(uuid.uuid4())
-        return prefix+'-boo!'
-
     def anon_button_clicked(self):
         global patientName
 
@@ -73,34 +58,19 @@ class DicomAnonWidget(QWidget):
         # get the file names
         dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         # get the list of DICOM files in the selected directory
-        dicom_files = list(get_files(dicom_dir, check=True))
-        print('there are {} valid files'.format(len(dicom_files)))
+        dicom_files = glob.glob('{}/*.dcm')
+        print('there are {} files'.format(len(dicom_files)))
         if len(dicom_files) > 0:
-            updated_ids = dict();
             # set up the anon directory
             ANON_DIR = dicom_dir + '_ANON'
             if os.path.exists(ANON_DIR):
                 shutil.rmtree(ANON_DIR)
             os.makedirs(ANON_DIR)
-            # load the recipe
-            recipe = DeidRecipe('deid.dicom')
-            # get the identifiers
-            ids = get_identifiers(dicom_files)
-            for image, fields in ids.items():
-                for field in fields:
-                    if hasattr(field, 'name'):
-                        field = field.name
-                    print(field)
-                # fields['generate_uid'] = self.generate_uid
-                # fields['patient_name'] = 'this is the new patient name'
-                # updated_ids[image] = fields
-            # clean the files
-            # cleaned_files = replace_identifiers(dicom_files=dicom_files,
-            #                         deid=recipe,
-            #                         ids=updated_ids)
-            # print(cleaned_files[0])
-
-
+            for f in dicom_files:
+                dicom_filename = os.path.basename(f)
+                ds = dcmread(f)
+                ds.PatientName = 'Fred Nerk'
+                ds.save_as('{}/{}'.format(ANON_DIR, dicom_filename))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
