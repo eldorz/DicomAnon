@@ -9,8 +9,6 @@ import random
 
 StyleSheet = '''
 #BlueProgressBar {
-    border: 2px solid #2196F3;
-    border-radius: 5px;
     background-color: #E0E0E0;
     text-align: center;
 }
@@ -30,6 +28,7 @@ class DicomAnonWidget(QWidget):
 
         self.pbar = QProgressBar(self, minimum=0, maximum=100, textVisible=False, objectName="BlueProgressBar")
         self.pbar.setValue(0)
+        self.pbar.setVisible(False)
 
         self.patientFieldsGroupBox = QGroupBox("Patient Fields")
 
@@ -132,6 +131,9 @@ class DicomAnonWidget(QWidget):
         if self.valid_input_fields():
             # get the file names under the directory selected
             dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+            # update the progress bar
+            self.pbar.setValue(0)
+            self.pbar.setVisible(True)
             # get the list of DICOM files in the selected directory
             dicom_files = glob.glob('{}/**/*.dcm'.format(dicom_dir), recursive=True)
             if len(dicom_files) > 0:
@@ -140,8 +142,6 @@ class DicomAnonWidget(QWidget):
                 if os.path.exists(ANON_DIR):
                     shutil.rmtree(ANON_DIR)
                 os.makedirs(ANON_DIR)
-                # update the progress bar
-                self.pbar.setValue(0)
                 # step through the files and replace the identifiable fields in each one
                 invalid_file_count = 0
                 for idx,f in enumerate(dicom_files):
@@ -155,7 +155,7 @@ class DicomAnonWidget(QWidget):
                         os.makedirs(anon_dirname)
                     # load and process the file
                     try:
-                        ds = dcmread(f, stop_before_pixels=True)
+                        ds = dcmread(f)
                     except Exception as e:
                         print(e)
                         invalid_file_count += 1
