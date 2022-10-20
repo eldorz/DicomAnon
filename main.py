@@ -7,6 +7,19 @@ from pydicom import dcmread
 import datetime
 import random
 
+StyleSheet = '''
+#BlueProgressBar {
+    border: 2px solid #2196F3;
+    border-radius: 5px;
+    background-color: #E0E0E0;
+    text-align: center;
+}
+#BlueProgressBar::chunk {
+    background-color: #2196F3;
+    width: 10px; 
+    margin: 0.5px;
+}
+'''
 
 class DicomAnonWidget(QWidget):
     def __init__(self):
@@ -15,9 +28,8 @@ class DicomAnonWidget(QWidget):
         self.anon_button = QPushButton('Anonymise!')
         self.anon_button.clicked.connect(self.anon_button_clicked)
 
-        self.pbar = QProgressBar(self)
+        self.pbar = QProgressBar(self, minimum=0, maximum=100, textVisible=False, objectName="BlueProgressBar")
         self.pbar.setValue(0)
-        self.pbar.setTextVisible(True)
 
         self.patientFieldsGroupBox = QGroupBox("Patient Fields")
 
@@ -128,9 +140,11 @@ class DicomAnonWidget(QWidget):
                 if os.path.exists(ANON_DIR):
                     shutil.rmtree(ANON_DIR)
                 os.makedirs(ANON_DIR)
+                # update the progress bar
+                self.pbar.setValue(0)
                 # step through the files and replace the identifiable fields in each one
                 invalid_file_count = 0
-                for f in dicom_files:
+                for idx,f in enumerate(dicom_files):
                     # replicate the directory structure under the anon folder
                     dirname = os.path.dirname(f)
                     basename = os.path.basename(f)
@@ -148,11 +162,17 @@ class DicomAnonWidget(QWidget):
                     else:
                         ds = self.anonymise_image(ds)
                         ds.save_as(output_dicom_filename)
+                    # update the progress bar
+                    proportion_completed = int((idx+1)/len(dicom_files)*100)
+                    self.pbar.setValue(proportion_completed)
+                    # process GUI events to reflect the update value
+                    QApplication.processEvents()
 
                 print('there were {} invalid files ({} files in total)'.format(invalid_file_count, len(dicom_files)))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet(StyleSheet)
     widget = DicomAnonWidget()
     widget.show()
     sys.exit(app.exec())
