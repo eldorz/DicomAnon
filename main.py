@@ -111,12 +111,20 @@ class DicomAnonWidget(QWidget):
         if len(self.familyNameEdit.text()) == 0:
             self.familyNameEdit.setStyleSheet("border: 1px solid red;")
             valid = False
+        else:
+            self.familyNameEdit.setStyleSheet("border: 0px;")
+
         if len(self.givenNameEdit.text()) == 0:
             self.givenNameEdit.setStyleSheet("border: 1px solid red;")
             valid = False
+        else:
+            self.givenNameEdit.setStyleSheet("border: 0px;")
+
         if len(self.patientIDEdit.text()) == 0:
             self.patientIDEdit.setStyleSheet("border: 1px solid red;")
             valid = False
+        else:
+            self.patientIDEdit.setStyleSheet("border: 0px;")
         
         if not valid:
             # display a prompt
@@ -131,44 +139,45 @@ class DicomAnonWidget(QWidget):
         if self.valid_input_fields():
             # get the file names under the directory selected
             dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-            # update the progress bar
-            self.pbar.setValue(0)
-            self.pbar.setVisible(True)
-            # get the list of DICOM files in the selected directory
-            dicom_files = glob.glob('{}/**/*.dcm'.format(dicom_dir), recursive=True)
-            if len(dicom_files) > 0:
-                # set up the anon directory
-                ANON_DIR = dicom_dir + '_ANON'
-                if os.path.exists(ANON_DIR):
-                    shutil.rmtree(ANON_DIR)
-                os.makedirs(ANON_DIR)
-                # step through the files and replace the identifiable fields in each one
-                invalid_file_count = 0
-                for idx,f in enumerate(dicom_files):
-                    # replicate the directory structure under the anon folder
-                    dirname = os.path.dirname(f)
-                    basename = os.path.basename(f)
-                    anon_dirname = dirname.replace(dicom_dir, ANON_DIR)
-                    output_dicom_filename = '{}/{}'.format(anon_dirname, basename)
-                    # make sure the output file's subdirectory exists
-                    if not os.path.exists(anon_dirname):
-                        os.makedirs(anon_dirname)
-                    # load and process the file
-                    try:
-                        ds = dcmread(f)
-                    except Exception as e:
-                        print(e)
-                        invalid_file_count += 1
-                    else:
-                        ds = self.anonymise_image(ds)
-                        ds.save_as(output_dicom_filename)
-                    # update the progress bar
-                    proportion_completed = int((idx+1)/len(dicom_files)*100)
-                    self.pbar.setValue(proportion_completed)
-                    # process GUI events to reflect the update value
-                    QApplication.processEvents()
+            if dicom_dir != "":
+                # update the progress bar
+                self.pbar.setValue(0)
+                self.pbar.setVisible(True)
+                # get the list of DICOM files in the selected directory
+                dicom_files = glob.glob('{}/**/*.dcm'.format(dicom_dir), recursive=True)
+                if len(dicom_files) > 0:
+                    # set up the anon directory
+                    ANON_DIR = dicom_dir + '_ANON'
+                    if os.path.exists(ANON_DIR):
+                        shutil.rmtree(ANON_DIR)
+                    os.makedirs(ANON_DIR)
+                    # step through the files and replace the identifiable fields in each one
+                    invalid_file_count = 0
+                    for idx,f in enumerate(dicom_files):
+                        # replicate the directory structure under the anon folder
+                        dirname = os.path.dirname(f)
+                        basename = os.path.basename(f)
+                        anon_dirname = dirname.replace(dicom_dir, ANON_DIR)
+                        output_dicom_filename = '{}/{}'.format(anon_dirname, basename)
+                        # make sure the output file's subdirectory exists
+                        if not os.path.exists(anon_dirname):
+                            os.makedirs(anon_dirname)
+                        # load and process the file
+                        try:
+                            ds = dcmread(f)
+                        except Exception as e:
+                            print(e)
+                            invalid_file_count += 1
+                        else:
+                            ds = self.anonymise_image(ds)
+                            ds.save_as(output_dicom_filename)
+                        # update the progress bar
+                        proportion_completed = int((idx+1)/len(dicom_files)*100)
+                        self.pbar.setValue(proportion_completed)
+                        # process GUI events to reflect the update value
+                        QApplication.processEvents()
 
-                print('there were {} invalid files ({} files in total)'.format(invalid_file_count, len(dicom_files)))
+                    print('there were {} invalid files ({} files in total)'.format(invalid_file_count, len(dicom_files)))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
