@@ -61,12 +61,7 @@ class DicomAnonWidget(QWidget):
         self.setLayout(self.vbox)
         self.show()
 
-    def anonymise_image(self, ds):
-        # get the current time
-        d = datetime.datetime.now()
-        current_date = d.strftime("%Y%m%d")
-        current_time = d.strftime("%H%M%S.%f")
-
+    def anonymise_image(self, ds, current_date, current_time, patient_birth_month, patient_birth_day):
         # update the personal fields
         ds.PatientName = '{} {}'.format(self.givenNameEdit.text(), self.familyNameEdit.text())
         ds.PatientID = self.patientIDEdit.text()
@@ -74,7 +69,7 @@ class DicomAnonWidget(QWidget):
             patientBirthYear = datetime.datetime.strptime(ds.PatientBirthDate, "%Y%m%d").year
         except:
             patientBirthYear = 1900
-        ds.PatientBirthDate = datetime.datetime(patientBirthYear, random.randint(1, 12), random.randint(1, 28))
+        ds.PatientBirthDate = datetime.datetime(patientBirthYear, patient_birth_month, patient_birth_day)
         ds.PatientBirthTime = current_time
         ds.PatientSex = 'O'
         ds.PatientAddress = 'Anonymised'
@@ -137,6 +132,15 @@ class DicomAnonWidget(QWidget):
     def anon_button_clicked(self):
         # make sure the fields are not empty
         if self.valid_input_fields():
+            # get the current time
+            d = datetime.datetime.now()
+            current_date = d.strftime("%Y%m%d")
+            current_time = d.strftime("%H%M%S.%f")
+
+            # select anonymised birth date
+            patient_birth_month = random.randint(1, 12)
+            patient_birth_day = random.randint(1, 28)
+
             # get the file names under the directory selected
             dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
             if dicom_dir != "":
@@ -169,7 +173,7 @@ class DicomAnonWidget(QWidget):
                             print(e)
                             invalid_file_count += 1
                         else:
-                            ds = self.anonymise_image(ds)
+                            ds = self.anonymise_image(ds, current_date, current_time, patient_birth_month, patient_birth_day)
                             ds.save_as(output_dicom_filename)
                         # update the progress bar
                         proportion_completed = int((idx+1)/len(dicom_files)*100)
