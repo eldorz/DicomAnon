@@ -51,6 +51,6 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='DicomAnon.app',
-    icon='DicomAnon.ico',
+    icon='DicomAnon.icns',
     bundle_identifier=None,
 )
