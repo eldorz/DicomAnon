@@ -84,14 +84,14 @@ class DicomAnonWidget(QWidget):
         ds.SeriesDescription = 'Anonymised'
         ds.StudyID = 'RMIT-EDU'
 
-        ds.StudyDate = current_date
-        ds.StudyTime = current_time
-        ds.SeriesDate = current_date
-        ds.SeriesTime = current_time
-        ds.InstanceCreationDate = current_date
-        ds.InstanceCreationTime = current_time
-        ds.ContentDate = current_date
-        ds.ContentTime = current_time
+        # ds.StudyDate = current_date
+        # ds.StudyTime = current_time
+        # ds.SeriesDate = current_date
+        # ds.SeriesTime = current_time
+        # ds.InstanceCreationDate = current_date
+        # ds.InstanceCreationTime = current_time
+        # ds.ContentDate = current_date
+        # ds.ContentTime = current_time
         
         ds.InstitutionName = 'Anonymised'
         ds.InstitutionAddress = 'Anonymised'
