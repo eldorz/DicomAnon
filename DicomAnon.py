@@ -2,7 +2,8 @@ import sys
 import glob
 import os
 import shutil
-from PyQt6.QtWidgets import QWidget, QPushButton, QProgressBar, QVBoxLayout, QApplication, QFileDialog, QGroupBox, QLineEdit, QLabel, QGridLayout, QErrorMessage, QMessageBox
+from PyQt6.QtWidgets import QWidget, QPushButton, QProgressBar, QVBoxLayout, QApplication, QFileDialog, QTextEdit
+from PyQt6.QtGui import QTextCursor, QTextOption
 from pydicom import dcmread
 import datetime
 import random
@@ -30,48 +31,22 @@ class DicomAnonWidget(QWidget):
         self.pbar.setValue(0)
         self.pbar.setVisible(False)
 
-        self.patientFieldsGroupBox = QGroupBox("Patient Fields")
+        self.logOutput = QTextEdit(self)
+        self.logOutput.setReadOnly(True)
+        self.logFont = self.logOutput.font()
+        self.logFont.setFamily("Courier")
+        self.logFont.setPointSize(10)
 
-        self.familyNameEdit = QLineEdit(self)
-        familyNameEditLabel = QLabel("&Family name:", self)
-        familyNameEditLabel.setBuddy(self.familyNameEdit)
-
-        self.givenNameEdit = QLineEdit(self)
-        givenNameEditLabel = QLabel("&Given name:", self)
-        givenNameEditLabel.setBuddy(self.givenNameEdit)
-
-        self.patientIDEdit = QLineEdit(self)
-        patientIDEditLabel = QLabel("&Patient ID:", self)
-        patientIDEditLabel.setBuddy(self.patientIDEdit)
-
-        layout = QGridLayout()
-        layout.addWidget(familyNameEditLabel, 0, 0)
-        layout.addWidget(self.familyNameEdit, 0, 1)
-        layout.addWidget(givenNameEditLabel, 1, 0)
-        layout.addWidget(self.givenNameEdit, 1, 1)
-        layout.addWidget(patientIDEditLabel, 2, 0)
-        layout.addWidget(self.patientIDEdit, 2, 1)
-        self.patientFieldsGroupBox.setLayout(layout)
-
-        self.resize(400, 200)
+        self.resize(600, 400)
         self.vbox = QVBoxLayout()
-        self.vbox.addWidget(self.patientFieldsGroupBox)
         self.vbox.addWidget(self.pbar)
         self.vbox.addWidget(self.anon_button)
+        self.vbox.addWidget(self.logOutput)
         self.setLayout(self.vbox)
         self.show()
 
-    def anonymise_image(self, ds, current_date, current_time, patient_birth_month, patient_birth_day):
+    def anonymise_image(self, ds):
         # update the personal fields
-        ds.PatientName = '{} {}'.format(self.givenNameEdit.text(), self.familyNameEdit.text())
-        ds.PatientID = self.patientIDEdit.text()
-        try:
-            patientBirthYear = datetime.datetime.strptime(ds.PatientBirthDate, "%Y%m%d").year
-        except:
-            patientBirthYear = 1900
-        ds.PatientBirthDate = datetime.datetime(patientBirthYear, patient_birth_month, patient_birth_day)
-        ds.PatientBirthTime = current_time
-        ds.PatientSex = 'O'
         ds.PatientAddress = 'Anonymised'
         ds.PatientMotherBirthName = 'Anonymised'
         ds.EthnicGroup = 'Anonymised'
@@ -82,17 +57,7 @@ class DicomAnonWidget(QWidget):
 
         ds.StudyDescription = 'Anonymised'
         ds.SeriesDescription = 'Anonymised'
-        ds.StudyID = 'RMIT-EDU'
 
-        # ds.StudyDate = current_date
-        # ds.StudyTime = current_time
-        # ds.SeriesDate = current_date
-        # ds.SeriesTime = current_time
-        # ds.InstanceCreationDate = current_date
-        # ds.InstanceCreationTime = current_time
-        # ds.ContentDate = current_date
-        # ds.ContentTime = current_time
-        
         ds.InstitutionName = 'Anonymised'
         ds.InstitutionAddress = 'Anonymised'
 
@@ -101,87 +66,78 @@ class DicomAnonWidget(QWidget):
 
         return ds
 
-    def valid_input_fields(self):
-        valid = True
-        if len(self.familyNameEdit.text()) == 0:
-            self.familyNameEdit.setStyleSheet("border: 1px solid red;")
-            valid = False
-        else:
-            self.familyNameEdit.setStyleSheet("border: 0px;")
+    # process all DICOMs under the selected top-level folder containing patient folders
+    def process_folder(self, tl_dir):
+        base_dir = os.path.dirname(tl_dir)
+        tl_folder_name = os.path.basename(tl_dir)
+        anon_tl_folder_name = tl_folder_name + '_ANON'
+        # directories under the top-level folder
+        tl_files_l = glob.glob('{}/*'.format(tl_dir), recursive=False)
+        # need to replace two things in the DICOM's full path name with the anonymised version:
+        #   1. the top-level folder name
+        #   2. the patient folder name
+        patient_id = 1
+        patients_d = {}
+        for tl_file_idx,tl_file in enumerate(tl_files_l):
+            if os.path.isdir(tl_file):
+                # this is a patient folder
+                patient_folder_name = os.path.basename(tl_file)
+                folder_sub = tl_dir + os.sep + patient_folder_name
+                # the anon patient folder
+                anon_patient_folder_name = 'Brain-{:03d}'.format(patient_id)
+                # to anonymise the folder names, we now have the substring to replace with
+                anon_folder_sub = anon_tl_folder_name + os.sep + anon_patient_folder_name
+                anon_tl_file = tl_file.replace(tl_file, anon_folder_sub)
+                anon_tl_path = base_dir + os.sep + anon_tl_file
+                # now find the DICOMs under the patient folder
+                dicom_files = glob.glob('{}/**/*.dcm'.format(tl_file), recursive=True)
+                invalid_file_count = 0
+                for dicom_fn in dicom_files:
+                    anon_dicom_fn = base_dir + os.sep + dicom_fn.replace(folder_sub, anon_folder_sub)
+                    anon_dicom_fn_dirname = os.path.dirname(anon_dicom_fn)
+                    # create the anon folder if it doesn't exist
+                    if not os.path.exists(anon_dicom_fn_dirname):
+                        os.makedirs(anon_dicom_fn_dirname)
+                    # load and process the file
+                    try:
+                        ds = dcmread(dicom_fn)
+                    except Exception as e:
+                        print(e)
+                        invalid_file_count += 1
+                    else:
+                        ds = self.anonymise_image(ds)
+                        ds.save_as(anon_dicom_fn)
+                patients_d[patient_id] = {'number_of_files':len(dicom_files), 
+                                          'invalid_file_count':invalid_file_count,
+                                          'from_folder':tl_file,
+                                          'to_folder':anon_tl_path
+                                          }
+                patient_id += 1
 
-        if len(self.givenNameEdit.text()) == 0:
-            self.givenNameEdit.setStyleSheet("border: 1px solid red;")
-            valid = False
-        else:
-            self.givenNameEdit.setStyleSheet("border: 0px;")
-
-        if len(self.patientIDEdit.text()) == 0:
-            self.patientIDEdit.setStyleSheet("border: 1px solid red;")
-            valid = False
-        else:
-            self.patientIDEdit.setStyleSheet("border: 0px;")
-        
-        if not valid:
-            # display a prompt
-            dlg = QMessageBox(self)
-            dlg.setWindowTitle("Missing input fields")
-            dlg.setText("Please enter a value in the fields with a red border.")
-            button = dlg.exec()
-        return valid
+            # update the progress bar
+            proportion_completed = int((tl_file_idx+1)/len(tl_files_l)*100)
+            self.pbar.setValue(proportion_completed)
+            # process GUI events to reflect the update value
+            QApplication.processEvents()
+        return patients_d
 
     def anon_button_clicked(self):
-        # make sure the fields are not empty
-        if self.valid_input_fields():
-            # get the current time
-            d = datetime.datetime.now()
-            current_date = d.strftime("%Y%m%d")
-            current_time = d.strftime("%H%M%S.%f")
-
-            # select anonymised birth date
-            patient_birth_month = random.randint(1, 12)
-            patient_birth_day = random.randint(1, 28)
-
-            # get the file names under the directory selected
-            dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-            if dicom_dir != "":
-                # update the progress bar
-                self.pbar.setValue(0)
-                self.pbar.setVisible(True)
-                # get the list of DICOM files in the selected directory
-                dicom_files = glob.glob('{}/**/*.dcm'.format(dicom_dir), recursive=True)
-                if len(dicom_files) > 0:
-                    # set up the anon directory
-                    ANON_DIR = dicom_dir + '_ANON'
-                    if os.path.exists(ANON_DIR):
-                        shutil.rmtree(ANON_DIR)
-                    os.makedirs(ANON_DIR)
-                    # step through the files and replace the identifiable fields in each one
-                    invalid_file_count = 0
-                    for idx,f in enumerate(dicom_files):
-                        # replicate the directory structure under the anon folder
-                        dirname = os.path.dirname(f)
-                        basename = os.path.basename(f)
-                        anon_dirname = dirname.replace(dicom_dir, ANON_DIR)
-                        output_dicom_filename = '{}/{}'.format(anon_dirname, basename)
-                        # make sure the output file's subdirectory exists
-                        if not os.path.exists(anon_dirname):
-                            os.makedirs(anon_dirname)
-                        # load and process the file
-                        try:
-                            ds = dcmread(f)
-                        except Exception as e:
-                            print(e)
-                            invalid_file_count += 1
-                        else:
-                            ds = self.anonymise_image(ds, current_date, current_time, patient_birth_month, patient_birth_day)
-                            ds.save_as(output_dicom_filename)
-                        # update the progress bar
-                        proportion_completed = int((idx+1)/len(dicom_files)*100)
-                        self.pbar.setValue(proportion_completed)
-                        # process GUI events to reflect the update value
-                        QApplication.processEvents()
-
-                    print('there were {} invalid files ({} files in total)'.format(invalid_file_count, len(dicom_files)))
+        # get the file names under the directory selected
+        dicom_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if dicom_dir != "":
+            # update the progress bar
+            self.pbar.setValue(0)
+            self.pbar.setVisible(True)
+            # process the DICOMs within
+            patients_d = self.process_folder(dicom_dir)
+            # display log
+            self.logOutput.setCurrentFont(self.logFont)
+            # self.logOutput.setTextColor(color)
+            for k, v in patients_d.items():
+                log_msg = 'Patient {}\nsource: {}\ndestination: {}\n{} files processed\n{} invalid\n------\n'.format(k, v['from_folder'], v['to_folder'], v['number_of_files'], v['invalid_file_count'])
+                self.logOutput.insertPlainText(log_msg)
+                sb = self.logOutput.verticalScrollBar()
+                sb.setValue(sb.maximum())
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
