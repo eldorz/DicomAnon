@@ -45,26 +45,28 @@ class DicomAnonWidget(QWidget):
         self.setLayout(self.vbox)
         self.show()
 
-    def anonymise_image(self, ds):
+    def anonymise_image(self, image, name):
         # update the personal fields
-        ds.PatientAddress = 'Anonymised'
-        ds.PatientMotherBirthName = 'Anonymised'
-        ds.EthnicGroup = 'Anonymised'
-        ds.PatientIdentityRemoved = 'YES'
+        image.PatientName = name
+        image.PatientID = name
+        image.PatientAddress = 'Anonymised'
+        image.PatientMotherBirthName = 'Anonymised'
+        image.EthnicGroup = 'Anonymised'
+        image.PatientIdentityRemoved = 'YES'
 
-        ds.ReferringPhysicianName = 'Anonymised'
-        ds.ReferringPhysicianAddress = 'Anonymised'
+        image.ReferringPhysicianName = 'Anonymised'
+        image.ReferringPhysicianAddress = 'Anonymised'
 
-        ds.StudyDescription = 'Anonymised'
-        ds.SeriesDescription = 'Anonymised'
+        image.StudyDescription = 'Anonymised'
+        image.SeriesDescription = 'Anonymised'
 
-        ds.InstitutionName = 'Anonymised'
-        ds.InstitutionAddress = 'Anonymised'
+        image.InstitutionName = 'Anonymised'
+        image.InstitutionAddress = 'Anonymised'
 
         # remove private data elements, as there is no guarantee as to what kind of information might be contained in them
-        ds.remove_private_tags()
+        image.remove_private_tags()
 
-        return ds
+        return image
 
     # process all DICOMs under the selected top-level folder containing patient folders
     def process_folder(self, tl_dir):
@@ -105,7 +107,7 @@ class DicomAnonWidget(QWidget):
                         print(e)
                         invalid_file_count += 1
                     else:
-                        ds = self.anonymise_image(ds)
+                        ds = self.anonymise_image(image=ds, name=anon_patient_folder_name)
                         ds.save_as(anon_dicom_fn)
                 patients_d[patient_id] = {'number_of_files':len(dicom_files), 
                                           'invalid_file_count':invalid_file_count,
