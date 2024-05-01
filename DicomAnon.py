@@ -60,6 +60,10 @@ class DicomAnonWidget(QWidget):
         self.destination_hbox.addWidget(self.destination_button)
         self.destination_hbox.addWidget(self.destination_label)
 
+        # status bar
+        self.status_label = QLabel('')
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+
         self.setFixedWidth(600)
         self.vbox = QVBoxLayout()
         self.vbox.setSpacing(5)
@@ -68,6 +72,7 @@ class DicomAnonWidget(QWidget):
         self.vbox.addWidget(self.anon_button)
         self.vbox.setSpacing(10)
         self.vbox.addWidget(self.pbar)
+        self.vbox.addWidget(self.status_label)
         self.setLayout(self.vbox)
         self.show()
         self.activateWindow()
@@ -118,10 +123,18 @@ class DicomAnonWidget(QWidget):
 
     # process all DICOMs under the selected top-level folder containing patient folders
     def process_folder(self, source_base_dir, destination_base_dir, mapping_df):
+        # update the status bar
+        self.status_label.setText('Counting files.')
+        # process GUI events to reflect the update value
+        QApplication.processEvents()
         # count the DICOM files under the selected directory
         dicom_files_count = len(glob.glob('{}/**/*.dcm'.format(source_base_dir), recursive=True))
         print('{} files'.format(dicom_files_count))
         dicom_files_processed = 0
+        # update the status bar
+        self.status_label.setText('Found {} files.'.format(dicom_files_count))
+        # process GUI events to reflect the update value
+        QApplication.processEvents()
         # find the patient directories
         patient_dirs_l = [ name for name in os.listdir(source_base_dir) if os.path.isdir(os.path.join(source_base_dir, name)) ]
         for patient_dir_idx,patient_dir in enumerate(patient_dirs_l):
@@ -132,6 +145,10 @@ class DicomAnonWidget(QWidget):
             anon_patient_dir = destination_base_dir + os.sep + anon_patient_folder_name
             patient_full_dir = source_base_dir + os.sep + patient_dir
             dicom_files = glob.glob('{}/**/*.dcm'.format(patient_full_dir), recursive=True)
+            # update the status bar
+            self.status_label.setText('Processing patient ID {}'.format(patient_id))
+            # process GUI events to reflect the update value
+            QApplication.processEvents()
             for source_file in dicom_files:
                 rel_path = os.path.relpath(source_file, patient_full_dir)  # use the same relative path for source and target
                 anon_patient_file = anon_patient_dir + os.sep + rel_path   # add the relative path to the 'Brain-nnnn' directory
@@ -157,6 +174,10 @@ class DicomAnonWidget(QWidget):
             # count the total sessions anonymised for this patient
             anon_patient_sessions_l = [ name for name in os.listdir(anon_patient_dir) if os.path.isdir(os.path.join(anon_patient_dir, name)) ]
             session_count = len(anon_patient_sessions_l)
+            # update the status bar
+            self.status_label.setText('Updating the patient ID mapping.')
+            # process GUI events to reflect the update value
+            QApplication.processEvents()
             # add or update the mapping
             date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if new_patient:
@@ -189,21 +210,37 @@ class DicomAnonWidget(QWidget):
                 mapping_df = None
             # process the DICOMs within
             mapping_df = self.process_folder(self.source_dir, self.destination_dir, mapping_df)
+            # process UI events
+            QApplication.processEvents()
+            # update the status bar
+            self.status_label.setText('Saving the ID mapping file.')
             # update the mapping file
             mapping_df.to_excel(mapping_file)
+            # process UI events
+            QApplication.processEvents()
             # enable buttons
             self.source_button.setEnabled(True)
             self.destination_button.setEnabled(True)
             self.anon_button.setEnabled(True)
-            # show that we've finished
-            QMessageBox.information(self, 'DicomAnon', 'Processing has completed.')
+            # update the status bar
+            self.status_label.setText('Finished processing.')
 
     def source_button_clicked(self):
+        # update the progress bar
+        self.pbar.setValue(0)
+        # update the status bar
+        self.status_label.setText('')
+
         self.source_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         if self.source_dir != "":
             self.source_label.setText(self.source_dir)
 
     def destination_button_clicked(self):
+        # update the progress bar
+        self.pbar.setValue(0)
+        # update the status bar
+        self.status_label.setText('')
+
         self.destination_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         if self.destination_dir != "":
             self.destination_label.setText(self.destination_dir)
