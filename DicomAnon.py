@@ -155,6 +155,8 @@ class DicomAnonWidget(QWidget):
                 # load and process the file
                 try:
                     ds = dcmread(source_file)
+                    # process GUI events
+                    QApplication.processEvents()
                 except Exception as e:
                     print(e)
                     invalid_file_count += 1
