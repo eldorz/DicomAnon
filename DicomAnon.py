@@ -208,6 +208,8 @@ class DicomAnonWidget(QWidget):
                 mapping_df = pd.read_excel(mapping_file, index_col=0)
             else:
                 mapping_df = None
+            # process UI events
+            QApplication.processEvents()
             # process the DICOMs within
             mapping_df = self.process_folder(self.source_dir, self.destination_dir, mapping_df)
             # process UI events
