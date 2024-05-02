@@ -2,3 +2,5 @@
 build
 dist
 *.spec
+.DS_Store
+.DS_Store
