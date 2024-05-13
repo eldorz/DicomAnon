@@ -1,6 +1,8 @@
 # DicomAnon
 This is a repository for a DICOM anonymiser, deftly named DicomAnon. Although there are many applications that will anonymise DICOM files, this one was written to do so in bulk. With DicomAnon, you can point to a parent folder containing many patient folders, which may contain many imaging sessions, which may contain images acquired with different modalities. After telling DicomAnon where you want the anonymised files to be placed, it will preserve the folder structure and place anonymised DICOM files there. DicomAnon does not change the original files; it merely reads them, changes the value of DICOM tags that contain personal information about the patient, and writes them to the designated destination folder.
 
+<img width="712" alt="DicomAnon screen shot" src="https://github.com/RMIT-University-Medical-Radiations/DicomAnon/assets/1016303/742f9e86-d083-413f-9635-909e5964eb2e">
+
 The DICOM files are anonymised by replacing the values of the following DICOM tags:
 * PatientName
 * PatientID
