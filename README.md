@@ -1,7 +1,5 @@
 # DicomAnon
-This is a repository for a DICOM anonymiser, deftly named DicomAnon. Although there are many applications that will anonymise DICOM files, this one was written to do so in bulk. With DicomAnon, you can point to a parent folder containing many patient folders, which may contain many imaging sessions, which may contain images acquired with different modalities. After telling DicomAnon where you want the anonymised files to be placed, it will preserve the folder structure and place anonymised DICOM files there. DicomAnon does not change the original files; it merely reads them, changes the DICOM tags that contain personal information about the patient, and writes them to the designated destination folder.
-
-Note that adding new patient folders (and updates to existing patient folders) will not erase previous DICOM files for the same patient; the new anonymised DICOM files will be saved in the same structure alongside those previously processed. The new patient IDs will also be added to the Excel mapping spreadsheet.
+This is a repository for a DICOM anonymiser, deftly named DicomAnon. Although there are many applications that will anonymise DICOM files, this one was written to do so in bulk. With DicomAnon, you can point to a parent folder containing many patient folders, which may contain many imaging sessions, which may contain images acquired with different modalities. After telling DicomAnon where you want the anonymised files to be placed, it will preserve the folder structure and place anonymised DICOM files there. DicomAnon does not change the original files; it merely reads them, changes the value of DICOM tags that contain personal information about the patient, and writes them to the designated destination folder.
 
 The DICOM files are anonymised by replacing the values of the following DICOM tags:
 * PatientName
@@ -18,6 +16,8 @@ The DICOM files are anonymised by replacing the values of the following DICOM ta
 * InstitutionAddress
 
 On completion, DicomAnon will save as an Excel spreadsheet in your home folder a mapping of the true patient IDs to anonymised patient IDs.
+
+Note that adding new patient folders (and updates to existing patient folders) will not erase previous DICOM files for the same patient; the new anonymised DICOM files will be saved in the same structure alongside those previously processed. The new patient IDs will also be added to the Excel mapping spreadsheet.
 
 ## Installation
 Unzip the downloaded file and move it to a convenient place, alongside your other utility applications.
