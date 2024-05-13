@@ -23,8 +23,8 @@ Note that adding new patient folders (and updates to existing patient folders) w
 Unzip the downloaded file and move it to a convenient place, alongside your other utility applications.
 
 ## Usage
-1. Select the parent folder of the patient folders containing the DICOM files to be anonymised (i.e. the 'source' folder)
+1. Start the application and select the parent folder of the patient folders containing the DICOM files to be anonymised (i.e. the 'source' folder)
 2. Select the destination folder that will contain the anonymised DICOM files (i.e. the 'destination' folder). Create a new destination folder if you wish.
 3. Press the Anonymise! button.
 4. Wait for the processing to complete. The progress bar provides a visual clue about how far along it is.
-5. An Excel spreadsheet with the mapping from the real patient ID to the anonymised patient ID will be saved in your home directory.
+5. On completion, an Excel spreadsheet with the mapping from the real patient ID to the anonymised patient ID will be saved in your home directory.
