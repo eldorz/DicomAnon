@@ -161,6 +161,7 @@ class DicomAnonWidget(QWidget):
                     print(e)
                     invalid_file_count += 1
                 else:
+                    ds = self.anonymise_image(image=ds, name=anon_patient_folder_name)
                     # create the anon folder if it doesn't exist
                     target_dir = os.path.dirname(anon_patient_file)  # create the missing directories all the way to the DICOM file
                     if not os.path.exists(target_dir):
