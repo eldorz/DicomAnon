@@ -90,12 +90,6 @@ class DicomAnonWidget(QWidget):
         image.ReferringPhysicianName = 'Anonymised'
         image.ReferringPhysicianAddress = 'Anonymised'
 
-        image.StudyDescription = 'Anonymised'
-        image.SeriesDescription = 'Anonymised'
-
-        image.InstitutionName = 'Anonymised'
-        image.InstitutionAddress = 'Anonymised'
-
         # remove private data elements, as there is no guarantee as to what kind of information might be contained in them
         image.remove_private_tags()
 
@@ -138,6 +132,7 @@ class DicomAnonWidget(QWidget):
         # find the patient directories
         patient_dirs_l = [ name for name in os.listdir(source_base_dir) if os.path.isdir(os.path.join(source_base_dir, name)) ]
         for patient_dir_idx,patient_dir in enumerate(patient_dirs_l):
+            valid_file_count = 0
             invalid_file_count = 0
             patient_id = int(patient_dir.split('_')[0])
             new_patient, anon_patient_id = self.get_anon_patient_id(patient_id, mapping_df)
@@ -155,6 +150,7 @@ class DicomAnonWidget(QWidget):
                 # load and process the file
                 try:
                     ds = dcmread(source_file)
+                    valid_file_count += 1
                     # process GUI events
                     QApplication.processEvents()
                 except Exception as e:
@@ -184,12 +180,13 @@ class DicomAnonWidget(QWidget):
             # add or update the mapping
             date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if new_patient:
-                row = pd.Series({'patient_id':patient_id, 'anon_patient_dir_name':anon_patient_folder_name, 'anon_patient_id':anon_patient_id, 'total_session_count':session_count, 'invalid_file_count':invalid_file_count, 'last_updated':date_str})
+                row = pd.Series({'patient_id':patient_id, 'anon_patient_dir_name':anon_patient_folder_name, 'anon_patient_id':anon_patient_id, 'total_session_count':session_count, 'valid_file_count':valid_file_count, 'invalid_file_count':invalid_file_count, 'last_updated':date_str})
                 mapping_df = pd.concat([mapping_df, pd.DataFrame([row], columns=row.index)]).reset_index(drop=True)
             else:
                 row_index = mapping_df.loc[mapping_df['patient_id'] == patient_id].index[0]
                 mapping_df.loc[row_index, 'total_session_count'] = session_count
                 mapping_df.loc[row_index, 'last_updated'] = date_str
+                mapping_df.loc[row_index, 'valid_file_count'] += valid_file_count
                 mapping_df.loc[row_index, 'invalid_file_count'] += invalid_file_count
 
         return mapping_df
