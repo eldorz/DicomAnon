@@ -11,6 +11,11 @@ The DICOM files are anonymised by replacing the values of the following DICOM ta
 * EthnicGroup
 * ReferringPhysicianName
 * ReferringPhysicianAddress
+* AccessionNumber
+* InstitutionName
+* PatientBirthDate
+* ProtocolName
+* OriginalAttributesSequence
 
 On completion, DicomAnon will save as an Excel spreadsheet in your home folder a mapping of the true patient IDs to anonymised patient IDs.
 
