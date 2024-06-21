@@ -7,6 +7,7 @@ from pydicom import dcmread
 import pandas as pd
 from os.path import expanduser
 from datetime import datetime
+import re
 
 StyleSheet = '''
 #BlueProgressBar {
@@ -90,6 +91,14 @@ class DicomAnonWidget(QWidget):
         image.ReferringPhysicianName = 'Anonymised'
         image.ReferringPhysicianAddress = 'Anonymised'
 
+        image.AccessionNumber = 'Anonymised'
+        image.InstitutionName = 'Anonymised'
+        image.PatientBirthDate = '20000101'
+        image.ProtocolName = 'nil'
+
+        if 'OriginalAttributesSequence' in image:
+            del image.OriginalAttributesSequence
+
         # remove private data elements, as there is no guarantee as to what kind of information might be contained in them
         image.remove_private_tags()
 
@@ -122,7 +131,8 @@ class DicomAnonWidget(QWidget):
         # process GUI events to reflect the update value
         QApplication.processEvents()
         # count the DICOM files under the selected directory
-        dicom_files_count = len(glob.glob('{}/**/*.dcm'.format(source_base_dir), recursive=True))
+        p = re.compile('^.*IM......$')
+        dicom_files_count = len([ name for name in glob.glob('{}/**/*'.format(source_base_dir), recursive=True) if p.match(name) is not None ])
         print('{} files'.format(dicom_files_count))
         dicom_files_processed = 0
         # update the status bar
@@ -139,7 +149,7 @@ class DicomAnonWidget(QWidget):
             anon_patient_folder_name = 'Brain-{:04d}'.format(anon_patient_id)
             anon_patient_dir = destination_base_dir + os.sep + anon_patient_folder_name
             patient_full_dir = source_base_dir + os.sep + patient_dir
-            dicom_files = glob.glob('{}/**/*.dcm'.format(patient_full_dir), recursive=True)
+            dicom_files = [ name for name in glob.glob('{}/**/*'.format(patient_full_dir), recursive=True) if p.match(name) is not None ]
             # update the status bar
             self.status_label.setText('Processing patient ID {}'.format(patient_id))
             # process GUI events to reflect the update value
